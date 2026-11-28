@@ -15,7 +15,7 @@ def test_dataset_loading(tmp_path):
 
     dataset = PatientDataset(path)
 
-    assert len(dataset) == 3
+    assert len(dataset) == 2
     assert dataset.X.shape == (2, 2)
     assert dataset.feature_names == ["age", "temperature"]
     assert np.array_equal(dataset.y, [0, 1])
