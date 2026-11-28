@@ -1,0 +1,79 @@
+
+name: CI/CD - virus_diag
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check code quality
+        run: flake8 . --select=E9,F63,F7,F82 --exclude=__pycache__,.git
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: python -m pytest tests/ -v
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Compile Python files
+        run: python -m compileall app core pipeline utils main.py
+
+      - name: Build project archive
+        run: |
+          mkdir -p dist
+          git archive --format=zip HEAD -o dist/virus_diag.zip
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: virus_diag
+          path: dist/virus_diag.zip
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: virus_diag
+
+      - name: Simulate deployment
+        run: |
+          mkdir -p deployment
+          unzip virus_diag.zip -d deployment
+          test -f deployment/main.py
+          echo "Deployment simulation successful!"
